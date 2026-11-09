@@ -1,0 +1,92 @@
+openapi: 3.0.3
+info:
+  title: API de Autenticación
+  description: Servicios de registro, inicio de sesión y gestión de usuario (AA5_EV01).
+  version: "1.0.0"
+servers:
+  - url: http://127.0.0.1:5000/api/v1
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    Respuesta:
+      type: object
+      properties:
+        ok: { type: boolean }
+        mensaje: { type: string }
+    Registro:
+      type: object
+      required: [usuario, correo, password]
+      properties:
+        usuario: { type: string, minLength: 3, maxLength: 30, example: alejandro }
+        correo: { type: string, format: email, example: ale@correo.com }
+        password: { type: string, minLength: 8, example: Clave1234 }
+    Login:
+      type: object
+      required: [usuario, password]
+      properties:
+        usuario: { type: string, example: alejandro }
+        password: { type: string, example: Clave1234 }
+    CambioPassword:
+      type: object
+      required: [password_actual, password_nueva]
+      properties:
+        password_actual: { type: string }
+        password_nueva: { type: string, minLength: 8 }
+paths:
+  /salud:
+    get:
+      summary: Verificar estado del servicio
+      responses:
+        "200": { description: Servicio activo }
+  /registro:
+    post:
+      summary: Registrar usuario
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Registro" }
+      responses:
+        "201": { description: Usuario registrado }
+        "400": { description: Datos inválidos }
+        "409": { description: Usuario o correo duplicado }
+  /login:
+    post:
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Login" }
+      responses:
+        "200": { description: Autenticación satisfactoria (devuelve token) }
+        "401": { description: Error en la autenticación }
+  /usuarios/me:
+    get:
+      summary: Consultar perfil
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Datos del usuario }
+        "401": { description: Token ausente, inválido o expirado }
+    delete:
+      summary: Eliminar cuenta
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200": { description: Cuenta eliminada }
+        "401": { description: Token inválido }
+  /usuarios/me/password:
+    put:
+      summary: Cambiar contraseña
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CambioPassword" }
+      responses:
+        "200": { description: Contraseña actualizada }
+        "400": { description: Contraseña nueva inválida }
+        "401": { description: Contraseña actual incorrecta o token inválido }
